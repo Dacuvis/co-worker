@@ -1,6 +1,16 @@
 # Co-Worker API
 
-![Co-Worker API banner](https://i.pinimg.com/736x/be/49/5a/be495a9ae2bb6de49ac21e5f83f269b6.jpg)
+<p align="center">
+	<img src="https://i.pinimg.com/736x/be/49/5a/be495a9ae2bb6de49ac21e5f83f269b6.jpg" alt="Co-Worker API banner" width="100%" />
+</p>
+
+<p align="center">
+	<img src="https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white" alt="Bun" />
+	<img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+	<img src="https://img.shields.io/badge/Elysia-E91E63?style=for-the-badge&logo=elysia&logoColor=white" alt="Elysia" />
+	<img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+	<img src="https://img.shields.io/badge/REST_API-0A7EA4?style=for-the-badge&logo=postman&logoColor=white" alt="REST API" />
+</p>
 
 <p align="center"><em>REST API untuk mengelola task secara terstruktur dan aman.</em></p>
 
@@ -25,7 +35,12 @@
 	 4. [Mengambil Task Berdasarkan ID](#44-mengambil-task-berdasarkan-id)
 	 5. [Memperbarui Task](#45-memperbarui-task)
 	 6. [Menghapus Task](#46-menghapus-task)
-5. [Penutup](#5-penutup)
+	 7. [Chat Rekomendasi AI](#47-chat-rekomendasi-ai)
+	 8. [Riwayat Rekomendasi](#48-riwayat-rekomendasi)
+5. [Frontend](#5-frontend)
+	 1. [Fitur Frontend](#51-fitur-frontend)
+	 2. [Menjalankan Frontend](#52-menjalankan-frontend)
+6. [Penutup](#6-penutup)
 
 ## 1. Pendahuluan
 
@@ -54,6 +69,10 @@ Proyek ini bertujuan menyediakan API yang sederhana dan terstruktur untuk:
 | Framework API | [Elysia](https://elysiajs.com/) |
 | Basis data | MongoDB |
 | Driver basis data | MongoDB Node.js Driver |
+| AI provider | Groq SDK |
+| Frontend | React, Tailwind CSS, shadcn/ui |
+| Animasi | Motion |
+| Markdown | react-markdown |
 | Port server | `3000` |
 
 ### 2.2 Struktur Direktori
@@ -87,6 +106,7 @@ Setiap dokumen pada koleksi `tasks` memiliki struktur berikut:
 | `title` | `string` | Judul pekerjaan |
 | `description` | `string` | Deskripsi pekerjaan |
 | `completed` | `boolean` | Status penyelesaian pekerjaan |
+| `archived` | `boolean` | Status arsip pekerjaan |
 
 ## 3. Implementasi dan Instalasi
 
@@ -112,6 +132,13 @@ API menggunakan environment variable `API_KEY` untuk autentikasi. Pada PowerShel
 
 ```powershell
 $env:API_KEY = "kunci-rahasia-anda"
+```
+
+Fitur rekomendasi menggunakan Groq. Tambahkan API key Groq dan, bila diperlukan, nama model:
+
+```powershell
+$env:GROQ_API_KEY = "api-key-groq-anda"
+$env:GROQ_MODEL = "openai/gpt-oss-20b"
 ```
 
 Basis data akan terhubung ke MongoDB lokal dengan konfigurasi berikut:
@@ -216,6 +243,103 @@ curl -X DELETE http://localhost:3000/tasks/65f1a9b2c3d4e5f678901234 \
 	-H "x-api-key: kunci-rahasia-anda"
 ```
 
-## 5. Penutup
+### 4.7 Chat Rekomendasi AI
 
-Co-Worker API menyediakan fondasi CRUD task yang ringan dengan pemisahan tanggung jawab antara route, controller, service, model, dan middleware. Struktur ini dapat dikembangkan lebih lanjut dengan fitur pengguna, pagination, pengujian otomatis, serta konfigurasi database melalui environment variable.
+```http
+POST /recommendations/chat
+```
+
+Endpoint ini mengirim pesan ke Groq untuk mendapatkan rekomendasi tugas yang dapat diberikan kepada pemilik tugas. Setiap percakapan otomatis disimpan ke koleksi `recommendation_history`.
+
+Request body:
+
+```json
+{
+	"message": "Apa tugas yang sebaiknya diberikan kepada Andi hari ini?",
+	"owner": "Andi",
+	"taskContext": "Proyek dokumentasi API sedang dalam tahap finalisasi"
+}
+```
+
+Contoh response:
+
+```json
+{
+	"historyId": "65f1a9b2c3d4e5f678901234",
+	"recommendation": "Prioritas: Tinggi\\nTugas: ...",
+	"model": "openai/gpt-oss-20b",
+	"createdAt": "2026-08-25T10:00:00.000Z"
+}
+```
+
+### 4.8 Riwayat Rekomendasi
+
+Daftar riwayat terbaru:
+
+```http
+GET /recommendations/history?limit=20
+```
+
+Detail satu riwayat:
+
+```http
+GET /recommendations/history/:id
+```
+
+Parameter `limit` bersifat opsional dan menerima nilai `1` sampai `100`. Secara default, server mengembalikan 20 riwayat terbaru.
+
+Edit riwayat rekomendasi:
+
+```http
+PATCH /recommendations/history/:id
+```
+
+Request body dapat berisi `response`, `owner`, `taskContext`, atau `archived`.
+
+Hapus riwayat rekomendasi:
+
+```http
+DELETE /recommendations/history/:id
+```
+
+## 5. Frontend
+
+Frontend tersedia di direktori `frontend/` dan dibangun menggunakan React, Tailwind CSS, komponen bergaya shadcn/ui, ikon Lucide, serta `react-markdown` untuk merender jawaban AI. Antarmukanya menggunakan pola catatan sederhana yang terinspirasi Google Keep.
+
+### 5.1 Fitur Frontend
+
+- Dashboard task dengan status penyelesaian.
+- Chat AI untuk meminta rekomendasi tugas berdasarkan pesan, pemilik, dan konteks.
+- Tampilan rekomendasi terbaru.
+- Riwayat rekomendasi yang dapat dipilih untuk ditampilkan kembali.
+- Dukungan Markdown untuk heading, teks tebal, daftar, dan potongan kode pada jawaban AI.
+- Form API key dan state loading/error untuk koneksi backend.
+- Empat pilihan theme: Pink, Summer, Cold, dan Spring.
+- Sidebar hamburger dengan mode penuh dan mode ikon saja.
+- Pengelolaan catatan melalui edit, arsip, pulihkan, dan hapus.
+- Animasi buka/tutup menggunakan Motion untuk sidebar, settings, dan modal.
+
+### 5.2 Menjalankan Frontend
+
+Frontend tidak membutuhkan environment variable. API key backend dimasukkan melalui panel Settings dan disimpan lokal di browser. URL backend development adalah `http://localhost:3000`.
+
+Jalankan server backend terlebih dahulu, kemudian jalankan frontend:
+
+```powershell
+bun run index.ts
+cd frontend
+bun install
+bun run dev
+```
+
+Frontend dikonfigurasi berjalan pada `http://localhost:3001`, sedangkan backend berjalan pada `http://localhost:3000`.
+
+Build production:
+
+```powershell
+bun run build
+```
+
+## 6. Penutup
+
+Co-Worker menyediakan fondasi pengelolaan task dengan bantuan rekomendasi AI, riwayat percakapan, dan frontend yang terhubung ke API. Struktur ini dapat dikembangkan lebih lanjut dengan fitur pengguna, pagination, pengujian otomatis, serta konfigurasi database melalui environment variable.
