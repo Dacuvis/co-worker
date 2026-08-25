@@ -1,0 +1,99 @@
+@import "../styles/globals.css";
+
+@layer base {
+  :root { @apply font-sans; }
+  body { @apply m-0 min-w-[320px] min-h-screen bg-[#fafafa] text-foreground; font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+}
+
+.markdown-content { @apply text-sm leading-6 text-slate-600; }
+.markdown-content h1, .markdown-content h2, .markdown-content h3 { @apply mb-2 mt-3 font-bold text-slate-800; }
+.markdown-content h1 { @apply text-lg; }
+.markdown-content h2 { @apply text-base; }
+.markdown-content ul { @apply my-2 list-disc pl-5; }
+.markdown-content ol { @apply my-2 list-decimal pl-5; }
+.markdown-content p { @apply my-2; }
+.markdown-content strong { @apply font-bold text-slate-800; }
+.markdown-content code { @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-xs; }
+.markdown-content table { @apply my-3 w-full border-collapse text-left text-xs; }
+.markdown-content th, .markdown-content td { @apply border border-slate-200 px-3 py-2 align-top; }
+.markdown-content th { @apply bg-slate-50 font-bold text-slate-800; }
+
+.theme-shell {
+  --theme-bg: #fafafa;
+  --theme-card: #ffffff;
+  --theme-active: #fce7f3;
+  --theme-accent: #ec4899;
+  --theme-accent-hover: #db2777;
+  background: var(--theme-bg) !important;
+  transition: background-color 220ms ease;
+}
+
+.theme-shell[data-theme="summer"] { --theme-bg: #fffaf0; --theme-card: #fffdf8; --theme-active: #fef3c7; --theme-accent: #f97316; --theme-accent-hover: #ea580c; }
+.theme-shell[data-theme="cold"] { --theme-bg: #f0f7ff; --theme-card: #ffffff; --theme-active: #dbeafe; --theme-accent: #3b82f6; --theme-accent-hover: #2563eb; }
+.theme-shell[data-theme="spring"] { --theme-bg: #f3fbf5; --theme-card: #ffffff; --theme-active: #dcfce7; --theme-accent: #22c55e; --theme-accent-hover: #16a34a; }
+.theme-shell .bg-white { background-color: var(--theme-card) !important; }
+.theme-shell .theme-card { background-color: var(--theme-card) !important; }
+.theme-shell .bg-yellow-100 { background-color: var(--theme-active) !important; }
+.theme-shell .bg-pink-500 { background-color: var(--theme-accent) !important; }
+.theme-shell .hover\:bg-pink-600:hover { background-color: var(--theme-accent-hover) !important; }
+.theme-shell .text-pink-500, .theme-shell .text-pink-600 { color: var(--theme-accent) !important; }
+.theme-shell .theme-choice-active { border-color: var(--theme-accent); background-color: var(--theme-active); color: var(--theme-accent); }
+.theme-dot { display: inline-block; width: 9px; height: 9px; margin-right: 3px; border-radius: 999px; }
+.theme-dot-pink { background: #ec4899; }
+.theme-dot-summer { background: #f97316; }
+.theme-dot-cold { background: #3b82f6; }
+.theme-dot-spring { background: #22c55e; }
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+html::-webkit-scrollbar,
+.scroll-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track,
+.scroll-area::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+html::-webkit-scrollbar-thumb,
+.scroll-area::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 2px solid #f8fafc;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: #cbd5e1;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.theme-shell {
+  scrollbar-color: var(--theme-accent) var(--theme-bg);
+}
+
+.theme-shell::-webkit-scrollbar-thumb,
+.theme-shell .scroll-area::-webkit-scrollbar-thumb {
+  border-color: var(--theme-bg);
+  background-color: var(--theme-accent);
+}
+
+.theme-shell::-webkit-scrollbar-thumb:hover,
+.theme-shell .scroll-area::-webkit-scrollbar-thumb:hover {
+  background-color: var(--theme-accent-hover);
+}
+
+@media (prefers-reduced-motion) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+  }
+}
