@@ -9,7 +9,8 @@ export const taskSchema = t.Object({
 export const taskUpdateSchema = t.Object({
     title: t.Optional(t.String()),
     description: t.Optional(t.String()),
-    completed: t.Optional(t.Boolean())
+    completed: t.Optional(t.Boolean()),
+    archived: t.Optional(t.Boolean())
 });
 
 export const taskIdSchema = t.Object({

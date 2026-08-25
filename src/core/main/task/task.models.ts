@@ -20,8 +20,13 @@ export class TaskModel {
 
     async getAllTasks(query: string) {
         const filter = query
-        ? { query }
-        : {}
+            ? {
+                $or: [
+                    { title: { $regex: query, $options: "i" } },
+                    { description: { $regex: query, $options: "i" } }
+                ]
+            }
+            : {};
         const tasks = await this.tasks.find(filter).toArray();
         return tasks;
     }
