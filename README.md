@@ -37,10 +37,13 @@
 	 6. [Menghapus Task](#46-menghapus-task)
 	 7. [Chat Rekomendasi AI](#47-chat-rekomendasi-ai)
 	 8. [Riwayat Rekomendasi](#48-riwayat-rekomendasi)
+	9. [Pencarian Task dan Rekomendasi](#49-pencarian-task-dan-rekomendasi)
 5. [Frontend](#5-frontend)
 	 1. [Fitur Frontend](#51-fitur-frontend)
 	 2. [Menjalankan Frontend](#52-menjalankan-frontend)
-6. [Penutup](#6-penutup)
+6. [Catatan Pengembangan](#6-catatan-pengembangan)
+7. [Changelog](#7-changelog)
+8. [Penutup](#8-penutup)
 
 ## 1. Pendahuluan
 
@@ -67,8 +70,8 @@ Proyek ini bertujuan menyediakan API yang sederhana dan terstruktur untuk:
 | Runtime | [Bun](https://bun.sh/) |
 | Bahasa | TypeScript |
 | Framework API | [Elysia](https://elysiajs.com/) |
-| Basis data | MongoDB |
-| Driver basis data | MongoDB Node.js Driver |
+| Basis data | Firebase Firestore |
+| Autentikasi | Firebase Authentication |
 | AI provider | Groq SDK |
 | Frontend | React, Tailwind CSS, shadcn/ui |
 | Animasi | Motion |
@@ -79,21 +82,29 @@ Proyek ini bertujuan menyediakan API yang sederhana dan terstruktur untuk:
 
 ```text
 .
-├── index.ts                         # Entry point dan konfigurasi server
-├── package.json                     # Dependensi proyek
-├── tsconfig.json                    # Konfigurasi TypeScript
+├── index.ts                              # Entry point dan konfigurasi server
+├── package.json                          # Dependensi proyek
+├── tsconfig.json                         # Konfigurasi TypeScript
 └── src/
-		├── clients/clients.ts           # Koneksi MongoDB
-		├── core/main/task/
-		│   ├── task.controller.ts       # Pengendali request dan response
-		│   ├── task.models.ts           # Operasi basis data
-		│   ├── task.routes.ts            # Definisi endpoint task
-		│   ├── task.service.ts          # Logika bisnis
-		│   ├── task.types.ts            # Tipe data Task
-		│   └── task.validation.ts       # Validasi request
-		└── utils/
-				├── error/error-handler.ts   # Penanganan error aplikasi
-				└── middleware/api-key.ts    # Middleware autentikasi
+    ├── clients/
+    │   ├── firebase.ts                   # Koneksi Firebase Admin & Firestore
+    │   └── clients.ts                    # Re-export klien
+    ├── core/main/
+    │   ├── task/
+    │   │   ├── task.controller.ts        # Pengendali request dan response
+    │   │   ├── task.models.ts            # Operasi Firestore
+    │   │   ├── task.routes.ts            # Definisi endpoint task
+    │   │   ├── task.service.ts           # Logika bisnis
+    │   │   ├── task.types.ts             # Tipe data Task
+    │   │   └── task.validation.ts        # Validasi request
+    │   ├── recomendation/                # Chat AI dan riwayat rekomendasi
+    │   ├── search/                       # Pencarian task dan rekomendasi
+    │   ├── login/                        # Endpoint POST /login
+    │   ├── register/                     # Endpoint POST /register
+    │   └── user/                         # Endpoint GET /users/me
+    └── utils/
+        ├── error/error-handler.ts        # Penanganan error aplikasi
+        └── middleware/api-key.ts         # Middleware autentikasi
 ```
 
 ### 2.3 Model Data
@@ -102,11 +113,13 @@ Setiap dokumen pada koleksi `tasks` memiliki struktur berikut:
 
 | Atribut | Tipe | Keterangan |
 | --- | --- | --- |
-| `_id` | `ObjectId` | ID unik yang dibuat MongoDB |
+| `id` | `string` | ID unik dokumen Firestore |
 | `title` | `string` | Judul pekerjaan |
 | `description` | `string` | Deskripsi pekerjaan |
 | `completed` | `boolean` | Status penyelesaian pekerjaan |
 | `archived` | `boolean` | Status arsip pekerjaan |
+| `userId` | `string` | ID pemilik dari Firebase Authentication |
+| `createdAt` | `timestamp` | Waktu pembuatan dokumen |
 
 ## 3. Implementasi dan Instalasi
 
@@ -115,7 +128,7 @@ Setiap dokumen pada koleksi `tasks` memiliki struktur berikut:
 Pastikan perangkat telah memiliki:
 
 1. Bun versi terbaru.
-2. MongoDB yang berjalan pada `mongodb://localhost:27017`.
+2. Akun Firebase dengan project yang sudah dikonfigurasi.
 3. Git, apabila proyek diambil dari repository.
 
 ### 3.2 Instalasi Dependensi
@@ -141,11 +154,22 @@ $env:GROQ_API_KEY = "api-key-groq-anda"
 $env:GROQ_MODEL = "openai/gpt-oss-20b"
 ```
 
-Basis data akan terhubung ke MongoDB lokal dengan konfigurasi berikut:
+Firebase Admin membutuhkan service account dari Firebase Console. Jangan commit nilai berikut; simpan sebagai environment variable:
 
-```text
-mongodb://localhost:27017/co-worker
+Salin template konfigurasi, lalu isi nilainya:
+
+```powershell
+Copy-Item .env.example .env
 ```
+
+```powershell
+$env:FIREBASE_PROJECT_ID = "co-worker-d8642"
+$env:FIREBASE_CLIENT_EMAIL = "firebase-adminsdk-...@co-worker-d8642.iam.gserviceaccount.com"
+$env:FIREBASE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+$env:FIREBASE_WEB_API_KEY = "AIza..."
+```
+
+Aktifkan Email/Password pada Firebase Authentication. `FIREBASE_WEB_API_KEY` adalah Web API key dari Firebase Project settings, sedangkan tiga variable lainnya berasal dari JSON service account. Jangan menambahkan file `.env` ke Git.
 
 ### 3.4 Menjalankan Server
 
@@ -159,10 +183,16 @@ Server dapat diakses melalui `http://localhost:3000`.
 
 ### 4.1 Autentikasi
 
-Seluruh request harus menyertakan header berikut:
+Endpoint task, recommendation, dan search dapat memakai salah satu autentikasi berikut. API key lama:
 
 ```http
 x-api-key: kunci-rahasia-anda
+```
+
+Atau gunakan token Firebase dari `/login` atau `/register`:
+
+```http
+Authorization: Bearer <idToken>
 ```
 
 Jika header tidak ada atau nilainya tidak sesuai dengan `API_KEY`, server mengembalikan status `401 Unauthorized`.
@@ -213,8 +243,6 @@ Contoh:
 curl http://localhost:3000/tasks/65f1a9b2c3d4e5f678901234 \
 	-H "x-api-key: kunci-rahasia-anda"
 ```
-
-ID harus berupa MongoDB `ObjectId` yang valid.
 
 ### 4.5 Memperbarui Task
 
@@ -302,9 +330,59 @@ Hapus riwayat rekomendasi:
 DELETE /recommendations/history/:id
 ```
 
+### 4.9 Pencarian Task dan Rekomendasi
+
+Cari task dan riwayat rekomendasi berdasarkan kata kunci:
+
+```http
+GET /search?query=dokumentasi&limit=20
+```
+
+Pencarian task mencakup `title` dan `description`, sedangkan pencarian rekomendasi mencakup `message`, `response`, `owner`, dan `taskContext`. Parameter `query` wajib diisi, sementara `limit` bersifat opsional dengan nilai `1` sampai `100` untuk masing-masing kategori.
+
+Contoh response:
+
+```json
+{
+	"tasks": [],
+	"recommendations": []
+}
+```
+
+### 4.10 Firebase Authentication
+
+Registrasi pengguna baru:
+
+```http
+POST /register
+```
+
+```json
+{
+	"email": "user@example.com",
+	"password": "password123",
+	"displayName": "Nama User"
+}
+```
+
+Login:
+
+```http
+POST /login
+```
+
+Kedua endpoint mengembalikan `idToken` dan `refreshToken`. Gunakan `idToken` untuk mengambil user yang sedang login:
+
+```http
+GET /users/me
+Authorization: Bearer <idToken>
+```
+
+Task dan riwayat rekomendasi baru otomatis disimpan dengan `userId` Firebase. Setiap akun hanya dapat melihat, mengubah, menghapus, dan mencari catatannya sendiri. Data lama yang dibuat sebelum pemisahan akun dan belum memiliki `userId` tidak ditampilkan kepada akun Firebase baru.
+
 ## 5. Frontend
 
-Frontend tersedia di direktori `frontend/` dan dibangun menggunakan React, Tailwind CSS, komponen bergaya shadcn/ui, ikon Lucide, serta `react-markdown` untuk merender jawaban AI. Antarmukanya menggunakan pola catatan sederhana yang terinspirasi Google Keep.
+Frontend tersedia di direktori `frontend/` dan dibangun menggunakan React, Tailwind CSS, komponen bergaya shadcn/ui, ikon Lucide, serta `react-markdown` untuk merender jawaban AI. URL backend dapat diatur dengan `BUN_PUBLIC_API_URL` pada `frontend/.env`.
 
 ### 5.1 Fitur Frontend
 
@@ -340,6 +418,34 @@ Build production:
 bun run build
 ```
 
-## 6. Penutup
+## 6. Catatan Pengembangan
+
+Seluruh kode dalam proyek ini ditulis oleh AI (Kiro). Ide, arah fitur, dan keputusan desain sepenuhnya berasal dari pemilik proyek. AI berperan sebagai eksekutor — menerjemahkan ide menjadi implementasi yang berjalan.
+
+## 7. Changelog
+
+### [2026-08-26]
+
+#### Firebase & Firestore
+- Migrasi basis data dari MongoDB ke **Firebase Firestore**.
+- Menambahkan Firebase Admin SDK untuk autentikasi dan akses Firestore di sisi server.
+- Membuat composite index Firestore yang diperlukan:
+  - Koleksi `tasks`: field `userId` (ASC) + `createdAt` (DESC).
+  - Koleksi `recommendation_history`: field `userId` (ASC) + `createdAt` (DESC).
+
+#### Autentikasi
+- Menambahkan endpoint `/register` dan `/login` menggunakan Firebase Authentication.
+- Menambahkan endpoint `GET /users/me` untuk mengambil data pengguna aktif dari token.
+- Mendukung login dengan Google melalui Firebase SDK di sisi frontend.
+- Setiap task dan riwayat rekomendasi kini disimpan dengan `userId` sehingga data tiap akun terisolasi.
+
+#### Frontend
+- Menambahkan halaman login dan register dengan toggle mode.
+- Menambahkan tombol login dengan Google.
+- Menambahkan indikator pengguna aktif dan tombol logout di header.
+- Memperbaiki bug pada `deleteTask` yang sebelumnya memanggil `updateTask({ archived: false })` secara tidak perlu sebelum menghapus.
+- Meningkatkan limit pengambilan riwayat rekomendasi dari 6 menjadi 100 agar item yang diarsipkan tetap muncul di tampilan Arsipkan.
+
+## 8. Penutup
 
 Co-Worker menyediakan fondasi pengelolaan task dengan bantuan rekomendasi AI, riwayat percakapan, dan frontend yang terhubung ke API. Struktur ini dapat dikembangkan lebih lanjut dengan fitur pengguna, pagination, pengujian otomatis, serta konfigurasi database melalui environment variable.
