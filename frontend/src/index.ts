@@ -4,6 +4,21 @@ import index from "./index.html";
 const server = serve({
   port: 3001,
   routes: {
+    "/config": {
+      GET() {
+        return Response.json({
+          apiUrl: process.env.BUN_PUBLIC_API_URL || "http://localhost:3000",
+          firebase: {
+            BUN_PUBLIC_FIREBASE_API_KEY: process.env.BUN_PUBLIC_FIREBASE_API_KEY,
+            BUN_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.BUN_PUBLIC_FIREBASE_AUTH_DOMAIN,
+            BUN_PUBLIC_FIREBASE_PROJECT_ID: process.env.BUN_PUBLIC_FIREBASE_PROJECT_ID,
+            BUN_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.BUN_PUBLIC_FIREBASE_STORAGE_BUCKET,
+            BUN_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.BUN_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+            BUN_PUBLIC_FIREBASE_APP_ID: process.env.BUN_PUBLIC_FIREBASE_APP_ID,
+          },
+        });
+      },
+    },
     // Serve index.html for all unmatched routes.
     "/*": index,
 
