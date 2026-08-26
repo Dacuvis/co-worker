@@ -12,6 +12,8 @@
   "dependencies": {
     "@elysia/cors": "^1.4.2",
     "elysia": "^1.4.29",
+    "firebase": "^12.18.0",
+    "firebase-admin": "^14.3.0",
     "groq-sdk": "^1.5.0",
     "logger": "^0.0.1",
     "mongodb": "6",
