@@ -1,5 +1,4 @@
 import Groq from "groq-sdk";
-import { ObjectId } from "mongodb";
 import { AppError } from "../../../utils/error/error-handler";
 import { RecommendationModel } from "./recomendation.model";
 import type { RecommendationHistory } from "./recomendation.types";
@@ -14,7 +13,7 @@ export class RecommendationService {
 	private recommendation = new RecommendationModel();
 	private readonly model = process.env.GROQ_MODEL ?? "openai/gpt-oss-20b";
 
-	async createRecommendation(input: RecommendationInput) {
+	async createRecommendation(input: RecommendationInput, userId?: string) {
 		const apiKey = process.env.GROQ_API_KEY;
 
 		if (!apiKey) {
@@ -63,30 +62,31 @@ export class RecommendationService {
 			model: this.model,
 			createdAt: new Date()
 		};
+		if (userId) history.userId = userId;
 		const historyId = await this.recommendation.createHistory(history);
 
 		return { historyId, recommendation, model: this.model, createdAt: history.createdAt };
 	}
 
-	async getHistory(limit = 20) {
-		return await this.recommendation.getHistory(limit);
+	async getHistory(limit = 20, userId?: string) {
+		return await this.recommendation.getHistory(limit, userId);
 	}
 
-	async getHistoryById(id: string) {
-		return await this.recommendation.getHistoryById(id);
+	async getHistoryById(id: string, userId?: string) {
+		return await this.recommendation.getHistoryById(id, userId);
 	}
 
-	async updateHistory(id: string, history: Partial<RecommendationHistory>) {
-		if (!ObjectId.isValid(id)) {
+	async updateHistory(id: string, history: Partial<RecommendationHistory>, userId?: string) {
+		if (!id) {
 			throw new AppError("Invalid recommendation history ID", 400);
 		}
-		return await this.recommendation.update(id, history);
+		return await this.recommendation.update(id, history, userId);
 	}
 
-	async deleteHistory(id: string) {
-		if (!ObjectId.isValid(id)) {
+	async deleteHistory(id: string, userId?: string) {
+		if (!id) {
 			throw new AppError("Invalid recommendation history ID", 400);
 		}
-		return await this.recommendation.delete(id);
+		return await this.recommendation.delete(id, userId);
 	}
 }

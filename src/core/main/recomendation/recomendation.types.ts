@@ -1,7 +1,5 @@
-import type { ObjectId } from "mongodb";
-
 export interface RecommendationHistory {
-    _id?: ObjectId;
+    id?: string;
     message: string;
     response: string;
     owner?: string;
@@ -9,4 +7,5 @@ export interface RecommendationHistory {
     model: string;
     createdAt: Date;
     archived?: boolean;
+    userId?: string;
 }

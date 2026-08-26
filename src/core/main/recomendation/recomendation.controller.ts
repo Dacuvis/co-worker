@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { AppError } from "../../../utils/error/error-handler";
 import { RecommendationService } from "./recomendation.service";
 import type { RecommendationHistory } from "./recomendation.types";
@@ -6,9 +5,9 @@ import type { RecommendationHistory } from "./recomendation.types";
 export class RecommendationController {
 	private recommendationService = new RecommendationService();
 
-	async createRecommendation({body}: {body: {message: string, owner?: string, taskContext?: string}}) {
+	async createRecommendation({body, user}: {body: {message: string, owner?: string, taskContext?: string}, user?: {uid: string}}) {
 		try {
-			const result = await this.recommendationService.createRecommendation(body);
+			const result = await this.recommendationService.createRecommendation(body, user?.uid);
 			return { status: 201, body: result };
 		} catch (error) {
 			if (error instanceof AppError) {
@@ -18,9 +17,9 @@ export class RecommendationController {
 		}
 	}
 
-	async getHistory({query}: {query: {limit?: number}}) {
+	async getHistory({query, user}: {query: {limit?: number}, user?: {uid: string}}) {
 		try {
-			const history = await this.recommendationService.getHistory(query.limit ?? 20);
+			const history = await this.recommendationService.getHistory(query.limit ?? 20, user?.uid);
 			return { status: 200, body: history };
 		} catch (error) {
 			if (error instanceof AppError) {
@@ -30,12 +29,12 @@ export class RecommendationController {
 		}
 	}
 
-	async getHistoryById({params}: {params: {id: string}}) {
+	async getHistoryById({params, user}: {params: {id: string}, user?: {uid: string}}) {
 		try {
-			if (!ObjectId.isValid(params.id)) {
+			if (!params.id) {
 				throw new AppError("Invalid recommendation history ID", 400);
 			}
-			const history = await this.recommendationService.getHistoryById(params.id);
+			const history = await this.recommendationService.getHistoryById(params.id, user?.uid);
 			return { status: 200, body: history };
 		} catch (error) {
 			if (error instanceof AppError) {
@@ -45,9 +44,9 @@ export class RecommendationController {
 		}
 	}
 
-	async updateHistory({params, body}: {params: {id: string}, body: Partial<RecommendationHistory>}) {
+	async updateHistory({params, body, user}: {params: {id: string}, body: Partial<RecommendationHistory>, user?: {uid: string}}) {
 		try {
-			const updated = await this.recommendationService.updateHistory(params.id, body);
+			const updated = await this.recommendationService.updateHistory(params.id, body, user?.uid);
 			return { status: 200, body: updated };
 		} catch (error) {
 			if (error instanceof AppError) {
@@ -57,9 +56,9 @@ export class RecommendationController {
 		}
 	}
 
-	async deleteHistory({params}: {params: {id: string}}) {
+	async deleteHistory({params, user}: {params: {id: string}, user?: {uid: string}}) {
 		try {
-			const deleted = await this.recommendationService.deleteHistory(params.id);
+			const deleted = await this.recommendationService.deleteHistory(params.id, user?.uid);
 			return { status: 200, body: deleted };
 		} catch (error) {
 			if (error instanceof AppError) {
